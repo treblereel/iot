@@ -13,6 +13,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
@@ -48,6 +49,8 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class DeviceResource {
 
+    private static final Logger LOG = Logger.getLogger(DeviceResource.class);
+
     @Inject
     DeviceRegistry deviceRegistry;
 
@@ -75,7 +78,12 @@ public class DeviceResource {
             @QueryParam("providerId") String providerId,
             @QueryParam("available") Boolean available
                                     ) {
-        return deviceRegistry.findAll().stream()
+        var all = deviceRegistry.findAll();
+        LOG.infof("DeviceResource.list: findAll() returned %d devices, principal.tenancyId()=%s, principal.class=%s",
+                  all.size(), principal.tenancyId(), principal.getClass().getName());
+        all.forEach(d -> LOG.infof("DeviceResource.list: device=%s tenancy=%s match=%s",
+                                    d.deviceId(), d.tenancyId(), d.tenancyId().equals(principal.tenancyId())));
+        return all.stream()
                              .filter(d -> filterByTenancy(d.tenancyId()))
                              .filter(d -> deviceClass == null || d.deviceClass().name().equals(deviceClass))
                              .filter(d -> providerId == null || d.providerId().equals(providerId))
