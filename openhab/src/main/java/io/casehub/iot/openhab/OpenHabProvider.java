@@ -102,10 +102,20 @@ public class OpenHabProvider implements DeviceProvider {
     @Override
     public List<DeviceEntity> discover() {
         ensureSseConnected();
-        return getRestClient().getItems("Equipment", true).stream()
-                              .map(i -> mapper.mapEquipment(i, Instant.now()))
-                              .filter(Objects::nonNull)
-                              .toList();
+        var items = getRestClient().getItems("Equipment", true);
+        LOG.infof("OpenHAB discover: REST returned %d equipment items", items.size());
+        var result = items.stream()
+                          .map(i -> {
+                              var d = mapper.mapEquipment(i, Instant.now());
+                              LOG.infof("OpenHAB discover: mapped %s → %s (tenancy=%s)",
+                                        i.name(), d != null ? d.deviceClass() : "null",
+                                        d != null ? d.tenancyId() : "n/a");
+                              return d;
+                          })
+                          .filter(Objects::nonNull)
+                          .toList();
+        LOG.infof("OpenHAB discover: returning %d devices", result.size());
+        return result;
     }
 
     @Override
