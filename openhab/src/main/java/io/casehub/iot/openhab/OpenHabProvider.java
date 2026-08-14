@@ -121,19 +121,25 @@ public class OpenHabProvider implements DeviceProvider {
     @Override
     public CommandResult dispatch(DeviceCommand command) {
         String commandValue = buildCommandValue(command);
+        LOG.infof("dispatch: action=%s commandValue=%s", command.action(), commandValue);
         if (commandValue == null) {
+            LOG.warn("dispatch: commandValue is null — unknown action");
             return CommandResult.FAILED;
         }
 
         String targetItem = sseClient.resolveTargetItem(command);
+        LOG.infof("dispatch: resolveTargetItem=%s", targetItem);
         if (targetItem == null) {
+            LOG.warn("dispatch: no target item resolved — check equipment members and tags");
             return CommandResult.FAILED;
         }
 
         try {
             Response resp = getRestClient().sendCommand(targetItem, commandValue);
+            LOG.infof("dispatch: sendCommand(%s, %s) → HTTP %d", targetItem, commandValue, resp.getStatus());
             return resp.getStatus() < 300 ? CommandResult.SENT : CommandResult.FAILED;
         } catch (WebApplicationException | ProcessingException e) {
+            LOG.warnf(e, "dispatch: sendCommand failed");
             return CommandResult.FAILED;
         }
     }
