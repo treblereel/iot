@@ -1,0 +1,41 @@
+dsl: "0.1"
+version: "1.0"
+name: light-cycle-test
+namespace: io.casehub.iot
+title: Light Cycle — turn on then off by context
+
+spec:
+
+  capabilities:
+    - name: light-on
+      description: "Turn the light on"
+      inputSchema: "{ targetDeviceId: .deviceId, action: \"turn_on\" }"
+      outputSchema: "{ lightOn: .result }"
+
+    - name: light-off
+      description: "Turn the light off"
+      inputSchema: "{ targetDeviceId: .deviceId, action: \"turn_off\" }"
+      outputSchema: "{ lightOff: .result }"
+      prerequisites:
+        - light-on
+
+  goals:
+    - name: cycle-complete
+      kind: success
+      condition: ".lightOff != null"
+
+  completion:
+    success:
+      allOf:
+        - cycle-complete
+
+  bindings:
+    - name: turn-on
+      on: { contextChange: {} }
+      when: ".deviceId != null and .lightOn == null"
+      capability: light-on
+
+    - name: turn-off
+      on: { contextChange: {} }
+      when: ".lightOn != null and .lightOff == null"
+      capability: light-off
